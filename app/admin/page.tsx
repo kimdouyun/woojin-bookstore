@@ -15,11 +15,21 @@ interface Book {
   genre?: string;
 }
 
+interface User {
+  id: string;
+  username: string;
+  isAdmin: boolean;
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showUserManagement, setShowUserManagement] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -32,8 +42,81 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    fetchBooks();
+    checkAuth();
   }, []);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user && data.user.isAdmin) {
+          setUser(data.user);
+          fetchBooks();
+        } else {
+          alert('관리자 권한이 필요합니다.');
+          router.push('/login');
+        }
+      } else {
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('인증 확인 오류:', error);
+      router.push('/login');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      console.error('로그아웃 오류:', error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/auth/admin');
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.users);
+      }
+    } catch (error) {
+      console.error('사용자 목록 조회 오류:', error);
+    }
+  };
+
+  const handleToggleAdmin = async (userId: string, currentIsAdmin: boolean) => {
+    try {
+      const response = await fetch('/api/auth/admin', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          isAdmin: !currentIsAdmin,
+        }),
+      });
+
+      if (response.ok) {
+        fetchUsers();
+        if (userId === user?.id) {
+          // 현재 사용자의 권한이 변경되면 다시 인증 확인
+          checkAuth();
+        }
+      } else {
+        alert('관리자 권한 변경에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('관리자 권한 변경 오류:', error);
+      alert('관리자 권한 변경 중 오류가 발생했습니다.');
+    }
+  };
 
   const fetchBooks = async () => {
     try {
@@ -135,12 +218,16 @@ export default function AdminPage() {
     });
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 flex items-center justify-center">
         <div className="text-2xl text-gray-600">로딩 중...</div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null; // 리다이렉트 중
   }
 
   return (
@@ -150,7 +237,10 @@ export default function AdminPage() {
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold text-gray-800 mb-2">🔧 관리자 페이지</h1>
-            <p className="text-gray-600">책 리뷰를 추가, 수정, 삭제할 수 있습니다</p>
+            <p className="text-gray-600">
+              책 리뷰를 추가, 수정, 삭제할 수 있습니다
+              {user && <span className="ml-2 text-amber-600">({user.username}님)</span>}
+            </p>
           </div>
           <div className="flex gap-4">
             <button
@@ -159,13 +249,32 @@ export default function AdminPage() {
             >
               목록으로
             </button>
+            <button
+              onClick={handleLogout}
+              className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            >
+              로그아웃
+            </button>
             {!showForm && (
-              <button
-                onClick={() => setShowForm(true)}
-                className="px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
-              >
-                + 새 책 추가
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    setShowUserManagement(!showUserManagement);
+                    if (!showUserManagement) {
+                      fetchUsers();
+                    }
+                  }}
+                  className="px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                >
+                  {showUserManagement ? '사용자 관리 닫기' : '👥 사용자 관리'}
+                </button>
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+                >
+                  + 새 책 추가
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -214,6 +323,16 @@ export default function AdminPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                     placeholder="https://..."
                   />
+                  <div className="mt-2 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
+                    <p className="font-semibold mb-1">💡 이미지 URL 얻는 방법:</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li><strong>온라인 서점:</strong> 알라딘, 교보문고, 예스24 등에서 책 표지 이미지 우클릭 → "이미지 주소 복사"</li>
+                      <li><strong>Google Books:</strong> <a href="https://books.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">books.google.com</a>에서 책 검색 후 표지 이미지 URL 복사</li>
+                      <li><strong>Unsplash:</strong> <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">unsplash.com</a>에서 책 관련 이미지 검색</li>
+                      <li><strong>예시:</strong> <code className="bg-gray-100 px-1 rounded">https://image.aladin.co.kr/product/12345/coversum/1234567890.jpg</code></li>
+                    </ul>
+                    <p className="mt-2 text-xs text-gray-600">⚠️ 이미지 URL은 <code className="bg-gray-100 px-1 rounded">https://</code> 또는 <code className="bg-gray-100 px-1 rounded">http://</code>로 시작해야 합니다.</p>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -282,6 +401,58 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* 사용자 관리 섹션 */}
+        {showUserManagement && (
+          <div className="bg-white rounded-lg shadow-xl p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">👥 사용자 관리</h2>
+            <div className="mb-4 p-4 bg-blue-50 rounded-lg text-sm text-gray-700">
+              <p className="font-semibold mb-1">💡 관리자 권한 설정:</p>
+              <p className="text-xs">다른 사용자에게 관리자 권한을 부여하거나 해제할 수 있습니다. 관리자만 책을 추가/수정/삭제할 수 있습니다.</p>
+            </div>
+            {users.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                등록된 사용자가 없습니다.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {users.map((u) => (
+                  <div
+                    key={u.id}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                  >
+                    <div>
+                      <div className="font-semibold text-gray-800">
+                        {u.username}
+                        {u.isAdmin && (
+                          <span className="ml-2 px-2 py-1 bg-amber-500 text-white text-xs rounded">
+                            관리자
+                          </span>
+                        )}
+                      </div>
+                      {u.email && (
+                        <div className="text-sm text-gray-600">{u.email}</div>
+                      )}
+                      <div className="text-xs text-gray-500 mt-1">
+                        가입일: {new Date(u.createdAt).toLocaleDateString('ko-KR')}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleToggleAdmin(u.id, u.isAdmin)}
+                      className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                        u.isAdmin
+                          ? 'bg-red-500 text-white hover:bg-red-600'
+                          : 'bg-green-500 text-white hover:bg-green-600'
+                      }`}
+                    >
+                      {u.isAdmin ? '관리자 해제' : '관리자 지정'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

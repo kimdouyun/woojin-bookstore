@@ -54,10 +54,10 @@ export default function BooksPage() {
           <p className="text-xl text-gray-600">책을 클릭하여 리뷰를 확인하세요</p>
           <div className="mt-6 flex justify-center gap-4">
             <button
-              onClick={() => router.push('/admin')}
+              onClick={() => router.push('/login')}
               className="px-6 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
-              관리자 페이지
+              관리자 로그인
             </button>
             <button
               onClick={() => router.push('/')}
@@ -74,10 +74,10 @@ export default function BooksPage() {
             <div className="text-6xl mb-4">📖</div>
             <p className="text-2xl text-gray-600 mb-4">아직 등록된 책이 없습니다</p>
             <button
-              onClick={() => router.push('/admin')}
+              onClick={() => router.push('/login')}
               className="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
             >
-              첫 번째 책 추가하기
+              관리자 로그인하여 책 추가하기
             </button>
           </div>
         ) : (
