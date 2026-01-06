@@ -1,13 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = process.env.SUPABASE_URL!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+export function getSupabaseAdmin() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) {
+    return { supabase: null as any, error: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY" };
+  }
+
+  const supabase = createClient(url, key, { auth: { persistSession: false } });
+  return { supabase, error: null as string | null };
 }
-
-// 서버 전용(서비스 롤) 클라이언트
-export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-});
