@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 
 export default function LoginPage() {
@@ -100,6 +101,15 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-gray-600 text-sm">
+              계정이 없으신가요?{" "}
+              <Link href="/register" className="text-amber-600 hover:text-amber-700 font-medium">
+                회원가입하기
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

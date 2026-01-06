@@ -90,16 +90,28 @@ export default function Navigation() {
                     </button>
                   </>
                 ) : (
-                  <Link
-                    href="/login"
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      isActive("/login")
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-amber-500 text-white hover:bg-amber-600"
-                    }`}
-                  >
-                    로그인
-                  </Link>
+                  <>
+                    <Link
+                      href="/register"
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        isActive("/register")
+                          ? "bg-amber-100 text-amber-700"
+                          : "text-gray-600 hover:bg-amber-50 hover:text-amber-600"
+                      }`}
+                    >
+                      회원가입
+                    </Link>
+                    <Link
+                      href="/login"
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        isActive("/login")
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-amber-500 text-white hover:bg-amber-600"
+                      }`}
+                    >
+                      로그인
+                    </Link>
+                  </>
                 )}
               </>
             )}
