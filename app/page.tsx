@@ -25,10 +25,10 @@ export default function Home() {
         {/* 타이틀 */}
         <div className="space-y-4">
           <h1 className="text-6xl md:text-7xl font-bold text-gray-800">
-            책 리뷰
+            책으로 돌아보는 인생 리뷰
           </h1>
           <p className="text-xl md:text-2xl text-gray-600">
-            읽은 책들의 이야기를 나눕니다
+            읽어온 인생을 리뷰합니다
           </p>
         </div>
 
