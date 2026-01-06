@@ -12,6 +12,24 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
+    const url = process.env.SUPABASE_URL!;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!url || !key) {
+      return NextResponse.json(
+      { ok: false, error: "Missing supabase env in register route", hasUrl: !!url, hasKey: !!key },
+      { status: 500 }
+  );
+}
+
+// url 앞부분만 노출 (보안상 전체 노출 금지)
+if (!url.startsWith("https://")) {
+  return NextResponse.json(
+    { ok: false, error: "SUPABASE_URL format looks wrong", sample: url.slice(0, 20) },
+    { status: 500 }
+  );
+}
+
     const body = await request.json().catch(() => null);
     if (!body) {
       return NextResponse.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
