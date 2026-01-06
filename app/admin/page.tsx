@@ -6,6 +6,15 @@ import { useRouter } from "next/navigation";
 
 type Me = { username?: string; isAdmin?: boolean };
 
+type AdminUser = {
+  id: string;
+  username: string;
+  email: string | null;
+  is_admin: boolean;
+  created_at: string;
+};
+
+
 type BookRow = {
   id: string;
   title: string;
@@ -24,6 +33,10 @@ export default function AdminPage() {
   const [books, setBooks] = useState<BookRow[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<BookRow | null>(null);
+  const [showUserManagement, setShowUserManagement] = useState(false);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+const [usersLoading, setUsersLoading] = useState(false);
+
 
   const [form, setForm] = useState({
     title: "",
@@ -33,6 +46,7 @@ export default function AdminPage() {
     review: "",
     published_date: "",
     genre: "",
+
   });
 
   const load = async () => {
@@ -55,6 +69,46 @@ export default function AdminPage() {
       setLoading(false);
     }
   };
+
+  const fetchUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const res = await fetch("/api/auth/admin");
+      const data = await res.json().catch(() => null);
+  
+      if (!res.ok) {
+        alert(data?.error ?? "사용자 목록 조회 실패");
+        setUsers([]);
+        return;
+      }
+  
+      setUsers(Array.isArray(data?.users) ? data.users : []);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+  
+  const toggleAdmin = async (userId: string, currentIsAdmin: boolean) => {
+    try {
+      const res = await fetch("/api/auth/admin", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, isAdmin: !currentIsAdmin }),
+      });
+  
+      const data = await res.json().catch(() => null);
+  
+      if (!res.ok) {
+        alert(data?.error ?? "관리자 권한 변경 실패");
+        return;
+      }
+  
+      await fetchUsers();
+    } catch {
+      alert("관리자 권한 변경 중 오류");
+    }
+  };
+  
 
   useEffect(() => {
     load();
@@ -146,6 +200,11 @@ export default function AdminPage() {
             <button onClick={() => router.push("/books")} className="px-4 py-2 rounded bg-gray-600 text-white">목록</button>
             <button onClick={logout} className="px-4 py-2 rounded bg-red-600 text-white">로그아웃</button>
             <button onClick={startCreate} className="px-4 py-2 rounded bg-amber-600 text-white">+ 새 책</button>
+            <button onClick={async () => {const next = !showUserManagement; setShowUserManagement(next); if (next) await fetchUsers();}} className="px-4 py-2 rounded bg-purple-600 text-white"
+>
+  {showUserManagement ? "사용자 관리 닫기" : "사용자 관리"}
+</button>
+
           </div>
         </div>
 
@@ -182,6 +241,45 @@ export default function AdminPage() {
               </button>
             </div>
           </form>
+        ) : null}
+        {showUserManagement ? (
+          <div className="bg-white p-5 rounded-xl shadow mb-6">
+            <div className="font-bold mb-3">사용자 관리</div>
+
+            {usersLoading ? (
+              <div className="text-gray-600">로딩...</div>
+            ) : users.length === 0 ? (
+              <div className="text-gray-500">등록된 사용자가 없습니다.</div>
+            ) : (
+              <div className="space-y-3">
+                {users.map((u) => (
+                  <div key={u.id} className="border rounded-lg p-3 flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold">
+                        {u.username}
+                        {u.is_admin ? (
+                          <span className="ml-2 px-2 py-1 bg-amber-500 text-white text-xs rounded">관리자</span>
+                        ) : null}
+                      </div>
+                      {u.email ? <div className="text-sm text-gray-600">{u.email}</div> : null}
+                      <div className="text-xs text-gray-500">
+                        가입일: {new Date(u.created_at).toLocaleDateString("ko-KR")}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => toggleAdmin(u.id, u.is_admin)}
+                      className={`px-3 py-2 rounded text-white ${
+                        u.is_admin ? "bg-red-600" : "bg-green-600"
+                      }`}
+                    >
+                      {u.is_admin ? "관리자 해제" : "관리자 지정"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         ) : null}
 
         <div className="bg-white p-5 rounded-xl shadow">
