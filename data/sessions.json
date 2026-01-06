@@ -29,10 +29,10 @@
     "isAdmin": true,
     "expiresAt": "2026-01-11T13:09:44.387Z"
   },
-  "3b15fe3272c0546708a6b589c5ce1398c4b374d80785aaf68fd26a5bf91c3f31": {
-    "userId": "1767521431281",
-    "username": "woojin",
-    "isAdmin": true,
-    "expiresAt": "2026-01-13T01:03:49.900Z"
+  "86f73da1efe80efba95f95a828c4a62c1c4016531581ca65d18fe78aae504ec6": {
+    "userId": "1767664480536",
+    "username": "asdf",
+    "isAdmin": false,
+    "expiresAt": "2026-01-13T01:54:40.702Z"
   }
 }

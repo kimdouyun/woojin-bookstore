@@ -6,5 +6,13 @@
     "password": "fcef98b744736a297550c9f911bc932bca2112c699d4e69ff3f067bd1e8e3ca9",
     "isAdmin": true,
     "createdAt": "2026-01-04T10:10:31.282Z"
+  },
+  {
+    "id": "1767664480536",
+    "username": "asdf",
+    "email": null,
+    "password": "8588310a98676af6e22563c1559e1ae20f85950792bdcd0c8f334867c54581cd",
+    "isAdmin": false,
+    "createdAt": "2026-01-06T01:54:40.536Z"
   }
 ]
