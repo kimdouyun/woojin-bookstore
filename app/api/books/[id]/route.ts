@@ -1,100 +1,66 @@
-import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { NextResponse } from "next/server";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { requireAdmin } from "@/lib/authServer";
 
-const dataFilePath = path.join(process.cwd(), 'data', 'books.json');
+export const runtime = "nodejs";
 
-function ensureDataFile() {
-  const dataDir = path.join(process.cwd(), 'data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-  if (!fs.existsSync(dataFilePath)) {
-    fs.writeFileSync(dataFilePath, JSON.stringify([], null, 2));
-  }
+// GET /api/books/:id
+export async function GET(_: Request, context: any) {
+  const id = context?.params?.id as string;
+
+  const { supabase, error } = getSupabaseAdmin();
+  if (error) return NextResponse.json({ ok: false, error }, { status: 500 });
+
+  const { data, error: dbErr } = await supabase.from("books").select("*").eq("id", id).maybeSingle();
+
+  if (dbErr) return NextResponse.json({ ok: false, error: "db_select_failed", details: dbErr }, { status: 500 });
+  if (!data) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+
+  return NextResponse.json({ ok: true, book: data }, { status: 200 });
 }
 
-// GET: 특정 책 정보 가져오기
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    ensureDataFile();
-    const data = fs.readFileSync(dataFilePath, 'utf-8');
-    const books = JSON.parse(data);
-    const book = books.find((b: any) => b.id === params.id);
-    
-    if (!book) {
-      return NextResponse.json({ error: '책을 찾을 수 없습니다.' }, { status: 404 });
-    }
-    
-    return NextResponse.json(book);
-  } catch (error) {
-    console.error('책 조회 오류:', error);
-    return NextResponse.json({ error: '책 정보를 불러올 수 없습니다.' }, { status: 500 });
-  }
+// PATCH /api/books/:id (관리자만)
+export async function PATCH(req: Request, context: any) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
+
+  const id = context?.params?.id as string;
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+
+  const patch: any = {};
+  const allowed = ["title", "author", "cover_image", "rating", "review", "published_date", "genre"];
+  for (const k of allowed) if (body[k] !== undefined) patch[k] = body[k];
+
+  if (patch.title !== undefined) patch.title = String(patch.title);
+  if (patch.author !== undefined) patch.author = String(patch.author);
+  if (patch.cover_image !== undefined) patch.cover_image = patch.cover_image ? String(patch.cover_image) : null;
+  if (patch.review !== undefined) patch.review = patch.review ? String(patch.review) : null;
+  if (patch.genre !== undefined) patch.genre = patch.genre ? String(patch.genre) : null;
+  if (patch.published_date !== undefined) patch.published_date = patch.published_date ? String(patch.published_date) : null;
+  if (patch.rating !== undefined) patch.rating = Number(patch.rating);
+
+  const { supabase, error } = getSupabaseAdmin();
+  if (error) return NextResponse.json({ ok: false, error }, { status: 500 });
+
+  const { data, error: updErr } = await supabase.from("books").update(patch).eq("id", id).select("*").single();
+  if (updErr) return NextResponse.json({ ok: false, error: "db_update_failed", details: updErr }, { status: 500 });
+
+  return NextResponse.json({ ok: true, book: data }, { status: 200 });
 }
 
-// PUT: 책 정보 수정
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    ensureDataFile();
-    const body = await request.json();
-    const data = fs.readFileSync(dataFilePath, 'utf-8');
-    const books = JSON.parse(data);
-    
-    const index = books.findIndex((b: any) => b.id === params.id);
-    if (index === -1) {
-      return NextResponse.json({ error: '책을 찾을 수 없습니다.' }, { status: 404 });
-    }
-    
-    books[index] = {
-      ...books[index],
-      title: body.title,
-      author: body.author,
-      coverImage: body.coverImage,
-      rating: body.rating,
-      review: body.review,
-      publishedDate: body.publishedDate || null,
-      genre: body.genre || null,
-      updatedAt: new Date().toISOString(),
-    };
-    
-    fs.writeFileSync(dataFilePath, JSON.stringify(books, null, 2));
-    
-    return NextResponse.json(books[index]);
-  } catch (error) {
-    console.error('책 수정 오류:', error);
-    return NextResponse.json({ error: '책을 수정할 수 없습니다.' }, { status: 500 });
-  }
-}
+// DELETE /api/books/:id (관리자만)
+export async function DELETE(_: Request, context: any) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
 
-// DELETE: 책 삭제
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    ensureDataFile();
-    const data = fs.readFileSync(dataFilePath, 'utf-8');
-    const books = JSON.parse(data);
-    
-    const filteredBooks = books.filter((b: any) => b.id !== params.id);
-    
-    if (filteredBooks.length === books.length) {
-      return NextResponse.json({ error: '책을 찾을 수 없습니다.' }, { status: 404 });
-    }
-    
-    fs.writeFileSync(dataFilePath, JSON.stringify(filteredBooks, null, 2));
-    
-    return NextResponse.json({ message: '책이 삭제되었습니다.' });
-  } catch (error) {
-    console.error('책 삭제 오류:', error);
-    return NextResponse.json({ error: '책을 삭제할 수 없습니다.' }, { status: 500 });
-  }
-}
+  const id = context?.params?.id as string;
 
+  const { supabase, error } = getSupabaseAdmin();
+  if (error) return NextResponse.json({ ok: false, error }, { status: 500 });
+
+  const { error: delErr } = await supabase.from("books").delete().eq("id", id);
+  if (delErr) return NextResponse.json({ ok: false, error: "db_delete_failed", details: delErr }, { status: 500 });
+
+  return NextResponse.json({ ok: true }, { status: 200 });
+}

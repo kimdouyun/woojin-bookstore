@@ -1,61 +1,53 @@
-import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { NextResponse } from "next/server";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { requireAdmin } from "@/lib/authServer";
 
-const dataFilePath = path.join(process.cwd(), 'data', 'books.json');
+export const runtime = "nodejs";
 
-// 데이터 파일 초기화
-function ensureDataFile() {
-  const dataDir = path.join(process.cwd(), 'data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-  if (!fs.existsSync(dataFilePath)) {
-    fs.writeFileSync(dataFilePath, JSON.stringify([], null, 2));
-  }
-}
-
-// GET: 모든 책 목록 가져오기
+// GET /api/books
 export async function GET() {
-  try {
-    ensureDataFile();
-    const data = fs.readFileSync(dataFilePath, 'utf-8');
-    const books = JSON.parse(data);
-    return NextResponse.json(books);
-  } catch (error) {
-    console.error('책 목록 조회 오류:', error);
-    return NextResponse.json({ error: '책 목록을 불러올 수 없습니다.' }, { status: 500 });
-  }
+  const { supabase, error } = getSupabaseAdmin();
+  if (error) return NextResponse.json({ ok: false, error }, { status: 500 });
+
+  const { data, error: dbErr } = await supabase
+    .from("books")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (dbErr) return NextResponse.json({ ok: false, error: "db_select_failed", details: dbErr }, { status: 500 });
+  return NextResponse.json({ ok: true, books: data }, { status: 200 });
 }
 
-// POST: 새 책 추가
-export async function POST(request: NextRequest) {
-  try {
-    ensureDataFile();
-    const body = await request.json();
-    
-    const data = fs.readFileSync(dataFilePath, 'utf-8');
-    const books = JSON.parse(data);
-    
-    const newBook = {
-      id: Date.now().toString(),
-      title: body.title,
-      author: body.author,
-      coverImage: body.coverImage,
-      rating: body.rating,
-      review: body.review,
-      publishedDate: body.publishedDate || null,
-      genre: body.genre || null,
-      createdAt: new Date().toISOString(),
-    };
-    
-    books.push(newBook);
-    fs.writeFileSync(dataFilePath, JSON.stringify(books, null, 2));
-    
-    return NextResponse.json(newBook, { status: 201 });
-  } catch (error) {
-    console.error('책 추가 오류:', error);
-    return NextResponse.json({ error: '책을 추가할 수 없습니다.' }, { status: 500 });
-  }
-}
+// POST /api/books (관리자만)
+export async function POST(req: Request) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
 
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+
+  const title = body.title;
+  const author = body.author;
+
+  if (!title || !author) {
+    return NextResponse.json({ ok: false, error: "title/author required" }, { status: 400 });
+  }
+
+  const { supabase, error } = getSupabaseAdmin();
+  if (error) return NextResponse.json({ ok: false, error }, { status: 500 });
+
+  const payload = {
+    title: String(title),
+    author: String(author),
+    cover_image: body.cover_image ? String(body.cover_image) : null,
+    rating: body.rating !== undefined ? Number(body.rating) : 5,
+    review: body.review ? String(body.review) : null,
+    published_date: body.published_date ? String(body.published_date) : null, // "YYYY-MM-DD"
+    genre: body.genre ? String(body.genre) : null,
+  };
+
+  const { data, error: insertErr } = await supabase.from("books").insert(payload).select("*").single();
+
+  if (insertErr) return NextResponse.json({ ok: false, error: "db_insert_failed", details: insertErr }, { status: 500 });
+  return NextResponse.json({ ok: true, book: data }, { status: 201 });
+}
