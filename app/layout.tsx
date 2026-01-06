@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Navigation from "./components/Navigation";
 
 export const metadata: Metadata = {
   title: "책 리뷰 사이트",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
+        <Navigation />
+        <main>{children}</main>
+      </body>
     </html>
   );
 }

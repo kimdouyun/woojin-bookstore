@@ -44,15 +44,32 @@ export default function BookDetailPage() {
     })();
   }, [id]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">로딩...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="text-6xl animate-spin">📚</div>
+          <p className="text-gray-600 text-lg">책을 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!book) {
     return (
-      <div className="min-h-screen bg-amber-50 p-6">
-        <div className="max-w-3xl mx-auto">
-          <Link href="/books" className="text-blue-600 underline">← 목록으로</Link>
-          <div className="mt-6 bg-white p-6 rounded-xl shadow">
-            <div className="text-xl font-bold">책을 찾을 수 없어요.</div>
+      <div className="min-h-[calc(100vh-4rem)] py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <Link
+            href="/books"
+            className="inline-flex items-center space-x-2 text-amber-600 hover:text-amber-700 font-medium mb-6 transition-colors"
+          >
+            <span>←</span>
+            <span>목록으로 돌아가기</span>
+          </Link>
+          <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+            <div className="text-6xl mb-4">🔍</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">책을 찾을 수 없어요</h2>
+            <p className="text-gray-600">요청하신 책이 존재하지 않습니다.</p>
           </div>
         </div>
       </div>
@@ -60,32 +77,68 @@ export default function BookDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-amber-50 p-6">
-      <div className="max-w-3xl mx-auto">
-        <Link href="/books" className="text-blue-600 underline">← 목록으로</Link>
+    <div className="min-h-[calc(100vh-4rem)] py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <Link
+          href="/books"
+          className="inline-flex items-center space-x-2 text-amber-600 hover:text-amber-700 font-medium mb-6 transition-colors"
+        >
+          <span>←</span>
+          <span>목록으로 돌아가기</span>
+        </Link>
 
-        <div className="mt-4 bg-white p-6 rounded-xl shadow">
-          <div className="flex gap-6">
-            <div className="relative w-40 h-56 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="md:flex">
+            <div className="relative w-full md:w-80 h-96 md:h-auto bg-gradient-to-br from-amber-100 to-orange-100 flex-shrink-0">
               {book.cover_image ? (
-                <Image src={book.cover_image} alt={book.title} fill className="object-cover" sizes="160px" />
-              ) : null}
+                <Image
+                  src={book.cover_image}
+                  alt={book.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 320px"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <span className="text-8xl opacity-30">📚</span>
+                </div>
+              )}
             </div>
 
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold">{book.title}</h1>
-              <div className="text-gray-600 mt-1">{book.author}</div>
-              <div className="text-gray-500 mt-2">⭐ {book.rating} / 5</div>
-              {book.genre ? <div className="mt-2 text-sm">장르: {book.genre}</div> : null}
-              {book.published_date ? <div className="text-sm">출판일: {book.published_date}</div> : null}
+            <div className="flex-1 p-6 md:p-8">
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">{book.title}</h1>
+              <p className="text-xl text-gray-600 mb-4">{book.author}</p>
+
+              <div className="flex flex-wrap items-center gap-4 mb-6 pb-6 border-b border-gray-200">
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl">⭐</span>
+                  <span className="text-lg font-semibold text-gray-700">
+                    {book.rating} / 5
+                  </span>
+                </div>
+                {book.genre && (
+                  <span className="px-3 py-1 bg-amber-100 text-amber-700 text-sm font-medium rounded-full">
+                    {book.genre}
+                  </span>
+                )}
+                {book.published_date && (
+                  <span className="text-sm text-gray-500">
+                    출판일: {new Date(book.published_date).toLocaleDateString("ko-KR")}
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 mb-3">리뷰</h2>
+                <div className="prose max-w-none">
+                  <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                    {book.review ?? (
+                      <span className="text-gray-400 italic">리뷰가 없습니다.</span>
+                    )}
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-
-          <hr className="my-6" />
-
-          <div>
-            <div className="text-lg font-bold mb-2">리뷰</div>
-            <p className="whitespace-pre-wrap text-gray-800">{book.review ?? "리뷰가 없습니다."}</p>
           </div>
         </div>
       </div>
