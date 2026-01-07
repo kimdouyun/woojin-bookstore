@@ -8,12 +8,30 @@
 :root {
   --background: var(--color-background);
   --foreground: var(--color-text-primary);
+
+  /* 도서관 테마 관련 변수 (사용자 커스터마이즈 가능) */
+  --library-paper-opacity: 0.35;
+  --library-shelf-opacity: 0.15;
+  --library-shelf-accent-opacity: 0.08;
+
+  /* 책장(우드) 계열 색 */
+  --library-wood-1: #b45309; /* amber-700 */
+  --library-wood-2: #92400e; /* amber-800 */
+  --library-wood-3: #78350f; /* amber-900 */
+
+  /* 종이 질감 오버레이 색 */
+  --library-paper-ink: rgba(120, 53, 15, 0.08); /* amber-900 with alpha */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+
+    /* 다크 모드에서 종이/책장 강도 살짝 낮춤 */
+    --library-paper-opacity: 0.2;
+    --library-shelf-opacity: 0.1;
+    --library-shelf-accent-opacity: 0.05;
   }
 }
 
@@ -49,5 +67,53 @@ body {
 
 *::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-text-tertiary);
+}
+
+/* ============ 도서관 테마 배경 ============ */
+/* 메인 그라디언트 (은은한 앰버/오렌지) */
+.library-gradient {
+  background-image:
+    radial-gradient(1200px 600px at -10% -10%, rgba(251, 191, 36, 0.12), transparent 60%),
+    radial-gradient(1000px 500px at 110% 10%, rgba(249, 115, 22, 0.10), transparent 60%),
+    linear-gradient(135deg, var(--color-background-gradient-start), var(--color-background-gradient-mid), var(--color-background-gradient-end));
+  background-attachment: fixed;
+}
+
+/* 종이 질감 오버레이 */
+.library-paper-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--library-paper-opacity);
+  background-image:
+    radial-gradient(1px 1px at 10% 10%, var(--library-paper-ink), transparent 60%),
+    radial-gradient(1px 1px at 30% 30%, var(--library-paper-ink), transparent 60%),
+    radial-gradient(1px 1px at 70% 20%, var(--library-paper-ink), transparent 60%),
+    radial-gradient(1px 1px at 90% 60%, var(--library-paper-ink), transparent 60%),
+    radial-gradient(1px 1px at 50% 80%, var(--library-paper-ink), transparent 60%);
+  background-size: 300px 300px, 260px 260px, 280px 280px, 320px 320px, 340px 340px;
+  mix-blend-mode: multiply;
+}
+
+/* 책장(세로 띠) 오버레이 */
+.library-shelf-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(90deg,
+      transparent 0%,
+      rgba(0,0,0, var(--library-shelf-accent-opacity)) 2%,
+      transparent 4%),
+    repeating-linear-gradient(90deg,
+      rgba(180, 83, 9, var(--library-shelf-opacity)) 0px,
+      rgba(180, 83, 9, var(--library-shelf-opacity)) 12px,
+      rgba(146, 64, 14, var(--library-shelf-opacity)) 12px,
+      rgba(146, 64, 14, var(--library-shelf-opacity)) 24px,
+      rgba(120, 53, 15, var(--library-shelf-opacity)) 24px,
+      rgba(120, 53, 15, var(--library-shelf-opacity)) 36px
+    );
+  background-size: 100% 100%, 280px 100%;
+  background-position: left top, left top;
 }
 
